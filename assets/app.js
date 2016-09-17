@@ -10,9 +10,9 @@ firebase.initializeApp(config);
 
 var database = firebase.database();
 var rowNumber = 0;
-var intialDataLoaded = false;
-var dbTrainCount = 0;
+var dbTrainCount;
 
+//add user train data into firebase database
 $("#addTrainBtn").on("click",function(){
 
 	//grabs user input
@@ -36,21 +36,14 @@ $("#addTrainBtn").on("click",function(){
 	console.log(newTrain.trainName);	
 	console.log(newTrain.destination);
 	console.log(newTrain.firstTrainTime);
-	console.log(newTrain.frequency);	
+	console.log(newTrain.frequency);
 
+	rowNumber++;
 	return false;
 
 });
 
-$(document).ready(function(){
-//	if ( intialDataLoaded ) {
-//		setInterval(function(){updateTime();},50000);
-//	}
-    
-});
-
-
-
+//function to calculate and set next arrival train time and minutes till train
 function setTrainTime(firstTrainTime, frequency, rowNo) {
 	var currentTime = moment();
 	console.log("CT:"+currentTime);
@@ -90,6 +83,7 @@ function setTrainTime(firstTrainTime, frequency, rowNo) {
 
 } // end of settingTrainTime
 
+// function to update the next arrival train time and minutes till train 
 function updateTime(){
 	console.log("updateTime");
 	var tempTrainFirstTime;
@@ -102,73 +96,48 @@ function updateTime(){
 		tempFrequency = $("#frequency"+i).text();
 		setTrainTime(tempTrainFirstTime, tempFrequency,i);
 			
-	}
-						
+	}			
 
 } 
 
-//creates firebase event for adding train details to the database and html page when anew train data added
+//creates firebase event for adding train details to the html page 
 database.ref().on("child_added",function(childSnapshot,prevChildKey){
 
-  	console.log(childSnapshot.val());
+	  	console.log(childSnapshot.val());
 
-  	var trainName = childSnapshot.val().trainName;
-	var destin = childSnapshot.val().destination;
-	var firstTrainTime = childSnapshot.val().firstTrainTime;
-	var frequency = childSnapshot.val().frequency; 
+	  	var trainName = childSnapshot.val().trainName;
+		var destin = childSnapshot.val().destination;
+		var firstTrainTime = childSnapshot.val().firstTrainTime;
+		var frequency = childSnapshot.val().frequency; 
 
-	console.log(trainName);
-	console.log(destin);
-	console.log(firstTrainTime);
-	console.log(frequency);
+		console.log(trainName);
+		console.log(destin);
+		console.log(firstTrainTime);
+		console.log(frequency);
+		var i = rowNumber;
 
-	var i = rowNumber;
+		// Add each train's data into the table style=display:none
+		$("#trainTableId > tbody").append("<tr><td>" + trainName + "</td>"+
+											"<td>" + destin + "</td>	"+
+											"<td id=trainFirstTime"+i+" >" + firstTrainTime + "</td>" +
+											"<td id=frequency"+i+">" + frequency + "</td>" +
+											"<td id=trATime"+i+"></td>" +
+											"<td id=minTillTrain"+i+"></td></tr>");
 
-	
+		setTrainTime(firstTrainTime, frequency, rowNumber);
+		rowNumber++;
+	}, 
+	function (errorObject) {
 
-	// Add each train's data into the table style=display:none
-	$("#trainTableId > tbody").append("<tr><td>" + trainName + "</td>"+
-										"<td>" + destin + "</td>	"+
-										"<td id=trainFirstTime"+i+" >" + firstTrainTime + "</td>" +
-										"<td id=frequency"+i+">" + frequency + "</td>" +
-										"<td id=trATime"+i+"></td>" +
-										"<td id=minTillTrain"+i+"></td></tr>");
+	  	console.log("The read failed: " + errorObject.code);
 
-	
-
-	setTrainTime(firstTrainTime, frequency, rowNumber);
-	rowNumber++;
-	
-
-			//setInterval(function(){updateTime();},6000);
-		if (rowNumber >= dbTrainCount ) {
-			intialDataLoaded = true;
-			setInterval(function(){updateTime();},60000);
-			console.log("timer start");	
-
-		}
-
-			
-
-	   			
-
-}, 
-function (errorObject) {
-
-  	console.log("The read failed: " + errorObject.code);
-
-});
+	}
+);
 
 database.ref().once("value", function(snapshot) {
-  var dbTrainCount = snapshot.numChildren();
+  dbTrainCount = snapshot.numChildren();
   console.log("dbt: "+dbTrainCount);
-  // a === 1 ("name")
-  //var b = snapshot.child("name").numChildren());
-  // b === 2 ("first", "last")
-  //var c = snapshot.child("name/first").numChildren());
-  // c === 0 (since "Fred" is a string)
+
+  setInterval(function(){updateTime();},60000);
+  
 });
-//settingTrainTime();
-
-
-
